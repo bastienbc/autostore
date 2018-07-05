@@ -1,0 +1,83 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use utf8;
+use feature 'unicode_strings';
+use YAML::XS qw(LoadFile);
+use File::HomeDir qw(my_home);
+use File::Path qw(make_path);
+use Getopt::Long;
+use File::Spec::Functions qw(catfile catdir curdir);
+use File::Copy "mv";
+use File::Basename;
+binmode(STDOUT, ":utf8");
+
+
+sub prety_print{
+	my ( $old , $new , $dest ) = @_;
+	printf "%s  ->  %s\n" , $old , $new;
+}
+sub make_move{
+	my ( $old , $new , $dest ) = @_;
+	make_path $dest;
+	mv $old , $new;
+}
+
+sub move_file {
+	my ( $dest_folder , $file_path , $action ) = @_;
+	$action->(
+		$file_path ,
+	   	catfile(
+			$dest_folder ,
+		   	basename( $file_path ) ) ,
+	   	$dest_folder );
+}
+
+sub compare {
+	my( $mime , $filter_hash ) = @_;
+	foreach my $key (keys %$filter_hash)
+	{
+		my $array_ref = $filter_hash->{$key};
+		foreach my $pattern (@$array_ref)
+		{
+			return $key if( $mime =~ /$pattern/ );
+		}
+	}
+	return -1;
+}
+
+sub folder_loop {
+	my ( $sub_folder , $folder , $filter_hash , $action ) = @_;
+	opendir( DIR , $folder ) or die $!;
+	while( my $file = readdir(DIR) )
+	{
+		my $file_path = catfile( $folder , $file );
+		next unless ( -f $file_path );
+		next     if ( $file =~ /^\./ );
+		my $folder_dest = compare( `mimetype -b "$file_path"` , $filter_hash );
+		if( $folder_dest )
+		{
+			my $folder_path = catdir( $folder_dest , $sub_folder );
+			move_file $folder_path ,$file_path , $action;
+		}
+	}
+	closedir(DIR);
+}
+
+sub init {
+	my ( $conf_file , $folder , $action ) = @_;
+	my ( $sub_folder , $filter_hash ) = LoadFile($conf_file);
+	folder_loop $sub_folder , $folder , $filter_hash , $action;
+}
+
+my $folder = curdir;
+my $conf_file = catfile( my_home , ".config" , "store.conf" );
+my $action = \&make_move;
+my $dry_run = 0;
+GetOptions (
+	'directory|folder=s'	=>	\$folder ,
+	'config=s'				=>	\$conf_file,
+	'dry-run!'				=>	\$dry_run,
+);
+$action = \&prety_print if $dry_run;
+init $conf_file , $folder , $action;
