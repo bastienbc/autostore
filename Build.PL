@@ -15,7 +15,7 @@ my $build = Module::Build->new
 		"File::Path"			=> 0,
 		"Getopt::Long"			=> 0,
 		"File::Spec::functions" => 0,
-		"File::copy"			=> 0,
+		"File::Copy"			=> 0,
 		"File::Basename"		=> 0,
 		"File::MimeInfo::Magic" => 0,
 	},
