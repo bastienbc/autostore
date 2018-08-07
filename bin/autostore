@@ -10,6 +10,7 @@ use Getopt::Long;
 use File::Spec::Functions qw(catfile catdir curdir);
 use File::Copy "mv";
 use File::Basename;
+use File::MimeInfo::Magic;
 binmode(STDOUT, ":utf8");
 
 
@@ -54,7 +55,7 @@ sub folder_loop {
 		my $file_path = catfile( $folder , $file );
 		next unless ( -f $file_path );
 		next     if ( $file =~ /^\./ );
-		my $folder_dest = compare( `mimetype -b "$file_path"` , $filter_hash );
+		my $folder_dest = compare( mimetype "$file_path" , $filter_hash );
 		if( $folder_dest )
 		{
 			my $folder_path = catdir( $folder_dest , $sub_folder );
