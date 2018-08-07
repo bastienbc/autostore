@@ -1,1 +1,4 @@
 bin/autostore
+Build.PL
+MANIFEST
+store.conf
